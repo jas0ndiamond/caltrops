@@ -101,7 +101,7 @@ def drop_twx_platform_inbound():
 
     while( current_rule != None ):
 
-        iptc.easy.delete_rule(FILTER_TABLE_NAME, INPUT_CHAIN_NAME, current_rule)
+        iptablesDeleteRuleInbound(current_rule)
 
         logger.info("Successfully deleted rule judgement %s for port %s" % (current_rule['target'], drop_port) )
 
@@ -152,7 +152,7 @@ def reject_twx_platform_inbound():
 
     while( current_rule != None ):
 
-        iptc.easy.delete_rule(FILTER_TABLE_NAME, INPUT_CHAIN_NAME, current_rule)
+        iptablesDeleteRuleInbound(current_rule)
 
         logger.info("Successfully deleted rule judgement %s for port %s" % (current_rule['target'], reject_port) )
 
@@ -205,7 +205,7 @@ def accept_twx_platform_inbound():
 
     while( current_rule != None ):
 
-        iptc.easy.delete_rule(FILTER_TABLE_NAME, INPUT_CHAIN_NAME, current_rule)
+        iptablesDeleteRuleInbound(current_rule)
 
         logger.info("Successfully deleted rule judgement %s for port %s" % (current_rule['target'], accept_port) )
 
@@ -255,7 +255,7 @@ def accept_twx_platform_outbound():
 
     while( current_rule != None ):
 
-        iptc.easy.delete_rule(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, current_rule)
+        iptablesDeleteRuleOutbound(current_rule)
 
         logger.info("Successfully deleted rule judgement %s for port %s" % (current_rule['target'], accept_port) )
 
@@ -303,7 +303,7 @@ def drop_twx_platform_outbound():
 
     while( current_rule != None ):
 
-        iptc.easy.delete_rule(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, current_rule)
+        iptablesDeleteRuleOutbound(current_rule)
 
         logger.info("Successfully deleted rule judgement %s for port %s" % (current_rule['target'], drop_port) )
 
@@ -351,7 +351,7 @@ def reject_twx_platform_outbound():
 
     while( current_rule != None ):
 
-        iptc.easy.delete_rule(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, current_rule)
+        iptablesDeleteRuleOutbound(current_rule)
 
         logger.info("Successfully deleted rule judgement %s for port %s" % (current_rule['target'], reject_port) )
 
@@ -436,23 +436,23 @@ def iptablesInsertRuleOutbound(port=SQUID_PORT_DEFAULT_STR, judgement=JUDGEMENT_
     new_rule.target = iptc.Target(new_rule, judgement)
     output_chain.insert_rule(new_rule)
 
-# def iptablesDeleteRuleInbound(rule):
-#     #rule is a iptc rule object returned from getRuleAffectingPort
-#
-#     if(rule != None):
-#         iptc.easy.delete_rule(FILTER_TABLE_NAME, INPUT_CHAIN_NAME, rule)
-#
-#     else:
-#         logger.warn("Failed to resolve inbound rule to delete for port %s" % port)
-#
-#
-# def iptablesDeleteRuleOutbound(rule):
-#     #rule is a iptc rule object returned from getRuleAffectingPort
-#
-#     if(rule != None):
-#         iptc.easy.delete_rule(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, rule)
-#     else:
-#         logger.warn("Failed to resolve outbound rule to delete for port %s" % port)
+def iptablesDeleteRuleInbound(rule):
+    #rule is a iptc rule object returned from getRuleAffectingPort
+
+    if(rule != None):
+        iptc.easy.delete_rule(FILTER_TABLE_NAME, INPUT_CHAIN_NAME, rule)
+
+    else:
+        logger.warn("Failed to resolve inbound rule to delete")
+
+
+def iptablesDeleteRuleOutbound(rule):
+    #rule is a iptc rule object returned from getRuleAffectingPort
+
+    if(rule != None):
+        iptc.easy.delete_rule(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, rule)
+    else:
+        logger.warn("Failed to resolve outbound rule to delete")
 
 def isValidPort(port_str):
     port_num = int(port_str)
