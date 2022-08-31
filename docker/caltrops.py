@@ -26,20 +26,17 @@ active_twx_ports = {}
 HTTP_OK = 200
 HTTP_FAIL = 500
 
-PORT_MAX = 65535
-
+#ensure this port range does contain the flask port
 ALLOWED_TWX_PORT_MIN = 3128
 ALLOWED_TWX_PORT_MAX = 3148
 
+#ensure this port does not conflict with the twx port range
 FLASK_PORT = 5000
 FLASK_PORT_STR = "%s" % FLASK_PORT
 
 #TODO: dynamic or else this will impact multiple edge devices
-SQUID_PORT_DEFAULT = 3128
+SQUID_PORT_DEFAULT = ALLOWED_TWX_PORT_MIN
 SQUID_PORT_DEFAULT_STR = "%s" % SQUID_PORT_DEFAULT
-
-#TWX_PLATFORM_PORT = 8443
-#TWX_PLATFORM_PORT_STR = "%s" % TWX_PLATFORM_PORT
 
 FILTER_TABLE_NAME = "filter"
 
@@ -64,28 +61,6 @@ logger.info("Using flask www directory: %s" % flask_www_dir)
 @app.route('/')
 def root():
     return redirect("/info")
-
-@app.route('/add_twx_port')
-def add_twx_port():
-    logger.info("Adding TWX port to caltrops")
-
-    port_arg = request.args.get("port")
-
-    #check if valid port number and in acceptable range
-    #add to active ports
-    #add accept rule
-
-    #return success on confirmation of rule application
-
-@app.route('/del_twx_port')
-def del_twx_port():
-    port_arg = request.args.get("port")
-
-    #check if valid port number and in acceptable range
-    #add to active ports
-    #add accept rule
-
-    #return success on confirmation of rule application
 
 ##################
 #edge -> TWX, inbound to platform traffic
@@ -120,8 +95,6 @@ def drop_twx_platform_inbound():
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    input_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), INPUT_CHAIN_NAME)
-
     #delete any existing rules for this port
 
     current_rule = getRuleAffectingPort(drop_port)
@@ -136,12 +109,7 @@ def drop_twx_platform_inbound():
 
     #drop tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
 
-    rule_drop_squid = iptc.Rule()
-    rule_drop_squid.protocol = "tcp"
-    match = rule_drop_squid.create_match("tcp")
-    match.dport = drop_port #must be string
-    rule_drop_squid.target = iptc.Target(rule_drop_squid, JUDGEMENT_DROP)
-    input_chain.insert_rule(rule_drop_squid)
+    iptablesInsertRuleInbound(drop_port, JUDGEMENT_DROP)
 
     #check our rule change, and report in response
     if(isTWXPortInboundDrop(drop_port)):
@@ -172,23 +140,17 @@ def reject_twx_platform_inbound():
 
     #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 3128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
 
-    #inbound dest port?
-
     if( isTWXPortInboundReject(reject_port) == True ):
         logger.warning("Skipping adding REJECT rule for platform inbound port. Already REJECTing")
 
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    input_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), INPUT_CHAIN_NAME)
-
     #delete any existing rules for this port
 
     current_rule = getRuleAffectingPort(reject_port)
 
     while( current_rule != None ):
-
-        logger.debug("Attempting to delete rule: %s" % current_rule)
 
         iptc.easy.delete_rule(FILTER_TABLE_NAME, INPUT_CHAIN_NAME, current_rule)
 
@@ -198,12 +160,7 @@ def reject_twx_platform_inbound():
 
     #drop tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
 
-    rule_reject_squid = iptc.Rule()
-    rule_reject_squid.protocol = "tcp"
-    match = rule_reject_squid.create_match("tcp")
-    match.dport = reject_port #must be string
-    rule_reject_squid.target = iptc.Target(rule_reject_squid, JUDGEMENT_REJECT)
-    input_chain.insert_rule(rule_reject_squid)
+    iptablesInsertRuleInbound(reject_port, JUDGEMENT_REJECT)
 
     #check our rule change, and report in response
     if(isTWXPortInboundReject(reject_port)):
@@ -242,7 +199,6 @@ def accept_twx_platform_inbound():
         return build_rule_change_response(200, "{ 'change': 'SKIP' }")
 
     #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
-    input_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), INPUT_CHAIN_NAME)
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(accept_port)
@@ -255,14 +211,7 @@ def accept_twx_platform_inbound():
 
         current_rule = getRuleAffectingPort(accept_port)
 
-
-    #rule to ACCEPT on the specified port
-    rule_allow_squid = iptc.Rule()
-    rule_allow_squid.protocol = "tcp"
-    match = rule_allow_squid.create_match("tcp")
-    match.dport = accept_port #must be string
-    rule_allow_squid.target = iptc.Target(rule_allow_squid, JUDGEMENT_ACCEPT)
-    input_chain.insert_rule(rule_allow_squid)
+    iptablesInsertRuleInbound(accept_port, JUDGEMENT_ACCEPT)
 
     #check our rule change, and report in response
     if(isTWXPortInboundAccept(accept_port)):
@@ -300,7 +249,6 @@ def accept_twx_platform_outbound():
         return build_rule_change_response(200, "{ 'change': 'SKIP' }")
 
     #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
-    output_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), OUTPUT_CHAIN_NAME)
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(accept_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -313,14 +261,7 @@ def accept_twx_platform_outbound():
 
         current_rule = getRuleAffectingPort(accept_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
 
-
-    #rule to ACCEPT on the specified port
-    rule_allow_twx_outbound_default = iptc.Rule()
-    rule_allow_twx_outbound_default.protocol = "tcp"
-    match = rule_allow_twx_outbound_default.create_match("tcp")
-    match.sport = accept_port #must be string
-    rule_allow_twx_outbound_default.target = iptc.Target(rule_allow_twx_outbound_default, JUDGEMENT_ACCEPT)
-    output_chain.insert_rule(rule_allow_twx_outbound_default)
+    iptablesInsertRuleOutbound(accept_port, JUDGEMENT_ACCEPT)
 
     #check our rule change, and report in response
     if(isTWXPortOutboundAccept(accept_port)):
@@ -356,7 +297,6 @@ def drop_twx_platform_outbound():
         return build_rule_change_response(200, "{ 'change': 'SKIP' }")
 
     #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
-    output_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), OUTPUT_CHAIN_NAME)
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(drop_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -370,13 +310,7 @@ def drop_twx_platform_outbound():
         current_rule = getRuleAffectingPort(drop_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
 
 
-    #rule to ACCEPT on the specified port
-    rule_drop_twx_outbound_default = iptc.Rule()
-    rule_drop_twx_outbound_default.protocol = "tcp"
-    match = rule_drop_twx_outbound_default.create_match("tcp")
-    match.sport = drop_port #must be string
-    rule_drop_twx_outbound_default.target = iptc.Target(rule_drop_twx_outbound_default, JUDGEMENT_DROP)
-    output_chain.insert_rule(rule_drop_twx_outbound_default)
+    iptablesInsertRuleOutbound(drop_port, JUDGEMENT_DROP)
 
     #check our rule change, and report in response
     if(isTWXPortOutboundDrop(drop_port)):
@@ -411,7 +345,6 @@ def reject_twx_platform_outbound():
         return build_rule_change_response(200, "{ 'change': 'SKIP' }")
 
     #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
-    output_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), OUTPUT_CHAIN_NAME)
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(reject_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -424,39 +357,13 @@ def reject_twx_platform_outbound():
 
         current_rule = getRuleAffectingPort(reject_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
 
-
-    #rule to ACCEPT on the specified port
-    rule_reject_twx_outbound_default = iptc.Rule()
-    rule_reject_twx_outbound_default.protocol = "tcp"
-    match = rule_reject_twx_outbound_default.create_match("tcp")
-    match.sport = reject_port #must be string
-    rule_reject_twx_outbound_default.target = iptc.Target(rule_reject_twx_outbound_default, JUDGEMENT_REJECT)
-    output_chain.insert_rule(rule_reject_twx_outbound_default)
+    iptablesInsertRuleOutbound(reject_port, JUDGEMENT_REJECT)
 
     #check our rule change, and report in response
     if(isTWXPortOutboundReject(reject_port)):
         return build_rule_change_response(200, "{ 'change': 'SUCCESS' }")
     else:
         return build_rule_change_response(500, "{ 'change': 'FAIL' }")
-
-@app.route("/reset_rules")
-def reset_rules():
-    #remove any non-accepting rules affecting squid inbound
-
-    #remove any non-accepting rules affecting outbound
-
-    #set squid ports to accept
-    accept_twx_platform_inbound()
-
-    #need to keep the flask port open though
-
-
-    #check our rule change, and report in response
-    if(isTWXPortInboundAccept()):
-        return build_rule_change_response(200, "{ 'change': 'SUCCESS' }")
-    else:
-        return build_rule_change_response(500, "{ 'change': 'FAIL' }")
-
 
 @app.route('/shutdown')
 def caltrops_shutdown():
@@ -472,6 +379,9 @@ def home():
     output = "<html><head></head><body>\n"
 
     #TODO: logo on page
+    #TODO: sort lists of rules
+    #TODO: basic control interface
+    #TODO: dynamic diagram
 
     #to test, add a rule with iptables-legacy: /usr/sbin/iptables-legacy -A INPUT -p tcp -m tcp --dport 24800 -j ACCEPT
     logger.debug("filter easy.dump_table: %s" % iptc.easy.dump_table(FILTER_TABLE_NAME))
@@ -492,31 +402,62 @@ def home():
 
     output = "%s\n<br>\nForward Chain" % output
 
-    for rule in iptc.easy.dump_chain(FILTER_TABLE_NAME, FORWARD_CHAIN_NAME):
+    for rule in (iptc.easy.dump_chain(FILTER_TABLE_NAME, FORWARD_CHAIN_NAME)):
         output = "%s<br>%s\n" % (output, rule)
 
     output = "\n%s<hr>\n" % output
 
     return ("\n%s</body></html>" % output)
 
-# @app.route('/stop')
-# def stop():
-#     logger.info("Shutting down...")
-#
-#     global server
-#     server.terminate()
-#
-#     return "Shutting down"
-
 ##############################
 #flask seems to require this here, after the endpoints are defined above
+
+#insert a rule affecting inbound traffic. filter on destination port
+def iptablesInsertRuleInbound(port=SQUID_PORT_DEFAULT_STR, judgement=JUDGEMENT_ACCEPT):
+
+    input_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), INPUT_CHAIN_NAME)
+
+    new_rule = iptc.Rule()
+    new_rule.protocol = "tcp"
+    match = new_rule.create_match("tcp")
+    match.dport = port #must be string
+    new_rule.target = iptc.Target(new_rule, judgement)
+    input_chain.insert_rule(new_rule)
+
+#insert a rule affecting outbound traffic. filter on source port
+def iptablesInsertRuleOutbound(port=SQUID_PORT_DEFAULT_STR, judgement=JUDGEMENT_ACCEPT):
+
+    output_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), OUTPUT_CHAIN_NAME)
+
+    new_rule = iptc.Rule()
+    new_rule.protocol = "tcp"
+    match = new_rule.create_match("tcp")
+    match.sport = port #must be string
+    new_rule.target = iptc.Target(new_rule, judgement)
+    output_chain.insert_rule(new_rule)
+
+# def iptablesDeleteRuleInbound(rule):
+#     #rule is a iptc rule object returned from getRuleAffectingPort
+#
+#     if(rule != None):
+#         iptc.easy.delete_rule(FILTER_TABLE_NAME, INPUT_CHAIN_NAME, rule)
+#
+#     else:
+#         logger.warn("Failed to resolve inbound rule to delete for port %s" % port)
+#
+#
+# def iptablesDeleteRuleOutbound(rule):
+#     #rule is a iptc rule object returned from getRuleAffectingPort
+#
+#     if(rule != None):
+#         iptc.easy.delete_rule(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, rule)
+#     else:
+#         logger.warn("Failed to resolve outbound rule to delete for port %s" % port)
 
 def isValidPort(port_str):
     port_num = int(port_str)
     return (
-        port_num > 0 and
-        port_num < PORT_MAX and
-        (port_num >= ALLOWED_TWX_PORT_MIN and port_num <= ALLOWED_TWX_PORT_MIN) and
+        (port_num >= ALLOWED_TWX_PORT_MIN and port_num <= ALLOWED_TWX_PORT_MAX) and
         port_num != FLASK_PORT)
 
 def build_rule_change_response(status_code, data={}):
@@ -644,40 +585,51 @@ def startup():
     #default iptables rules
     #docker networking needs to be set up accordingly
 
-    input_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), INPUT_CHAIN_NAME)
-    output_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), OUTPUT_CHAIN_NAME)
+    #input_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), INPUT_CHAIN_NAME)
+    #output_chain = iptc.Chain(iptc.Table(iptc.Table.FILTER), OUTPUT_CHAIN_NAME)
 
     #problematic, affects the accept rules
     #input_chain.set_policy(JUDGEMENT_DROP)
     #output_chain.set_policy(JUDGEMENT_DROP)
 
     #allow tcp to caltrops on port 4444
-    logger.info("Inserting default caltrops inbound rule")
-    rule_allow_flask = iptc.Rule()
-    rule_allow_flask.protocol = "tcp"
-    match = rule_allow_flask.create_match("tcp")
-    match.dport = FLASK_PORT_STR #must be string
-    rule_allow_flask.target = iptc.Target(rule_allow_flask, "ACCEPT")
-    input_chain.insert_rule(rule_allow_flask)
+    logger.info("Inserting default caltrops inbound rules")
+
+    iptablesInsertRuleInbound(FLASK_PORT_STR)
+    iptablesInsertRuleOutbound(FLASK_PORT_STR)
+
+    # rule_allow_flask = iptc.Rule()
+    # rule_allow_flask.protocol = "tcp"
+    # match = rule_allow_flask.create_match("tcp")
+    # match.dport = FLASK_PORT_STR #must be string
+    # rule_allow_flask.target = iptc.Target(rule_allow_flask, "ACCEPT")
+    # input_chain.insert_rule(rule_allow_flask)
 
     #allow tcp to squid running on the twx default port 3128
     #TODO: maybe skip this and expect rest calls to set up
-    logger.info("Inserting default twx inbound rule")
-    rule_allow_twx_inbound_default = iptc.Rule()
-    rule_allow_twx_inbound_default.protocol = "tcp"
-    match = rule_allow_twx_inbound_default.create_match("tcp")
-    match.dport = SQUID_PORT_DEFAULT_STR #must be string
-    rule_allow_twx_inbound_default.target = iptc.Target(rule_allow_twx_inbound_default, "ACCEPT")
-    input_chain.insert_rule(rule_allow_twx_inbound_default)
+    logger.info("Inserting default twx rules")
+    # rule_allow_twx_inbound_default = iptc.Rule()
+    # rule_allow_twx_inbound_default.protocol = "tcp"
+    # match = rule_allow_twx_inbound_default.create_match("tcp")
+    # match.dport = SQUID_PORT_DEFAULT_STR #must be string
+    # rule_allow_twx_inbound_default.target = iptc.Target(rule_allow_twx_inbound_default, "ACCEPT")
+    # input_chain.insert_rule(rule_allow_twx_inbound_default)
+
+
+
+    for i in range(ALLOWED_TWX_PORT_MIN, ALLOWED_TWX_PORT_MAX):
+        port = "%s" % i
+        iptablesInsertRuleInbound(port)
+        iptablesInsertRuleOutbound(port)
 
     #allow outbound traffic on twx default port 3128
-    logger.info("Inserting default twx outbound rule")
-    rule_allow_twx_outbound_default = iptc.Rule()
-    rule_allow_twx_outbound_default.protocol = "tcp"
-    match = rule_allow_twx_outbound_default.create_match("tcp")
-    match.sport = SQUID_PORT_DEFAULT_STR #must be string
-    rule_allow_twx_outbound_default.target = iptc.Target(rule_allow_twx_outbound_default, "ACCEPT")
-    output_chain.insert_rule(rule_allow_twx_outbound_default)
+    # logger.info("Inserting default twx outbound rule")
+    # rule_allow_twx_outbound_default = iptc.Rule()
+    # rule_allow_twx_outbound_default.protocol = "tcp"
+    # match = rule_allow_twx_outbound_default.create_match("tcp")
+    # match.sport = SQUID_PORT_DEFAULT_STR #must be string
+    # rule_allow_twx_outbound_default.target = iptc.Target(rule_allow_twx_outbound_default, "ACCEPT")
+    # output_chain.insert_rule(rule_allow_twx_outbound_default)
 
     #TODO: set default policy on INPUT and OUTPUT to drop
     #iptc.easy.set_policy
