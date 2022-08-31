@@ -52,7 +52,7 @@ DUMMY_STR = "python should make this easier"
 STR_CLASS = DUMMY_STR.__class__
 DICT_CLASS = {DUMMY_STR : DUMMY_STR}.__class__
 
-logger.info("Starting up...")
+logger.info("Launching caltrops...")
 
 logger.info("Using flask www directory: %s" % flask_www_dir)
 
@@ -577,7 +577,7 @@ def startup():
     #add the basic routing and perform any setup
     #after execution, source should be able to destination through container as an open proxy
 
-    logger.info("Starting up caltrops")
+    logger.info("Running caltrops application setup")
 
     #expect the platform to run on this same host, but outside this container
     #won't be able to block platform ports
@@ -592,44 +592,40 @@ def startup():
     #input_chain.set_policy(JUDGEMENT_DROP)
     #output_chain.set_policy(JUDGEMENT_DROP)
 
-    #allow tcp to caltrops on port 4444
+    #allow tcp to caltrops
     logger.info("Inserting default caltrops inbound rules")
 
     iptablesInsertRuleInbound(FLASK_PORT_STR)
     iptablesInsertRuleOutbound(FLASK_PORT_STR)
 
-    # rule_allow_flask = iptc.Rule()
-    # rule_allow_flask.protocol = "tcp"
-    # match = rule_allow_flask.create_match("tcp")
-    # match.dport = FLASK_PORT_STR #must be string
-    # rule_allow_flask.target = iptc.Target(rule_allow_flask, "ACCEPT")
-    # input_chain.insert_rule(rule_allow_flask)
+    #sanity check squid port has accept judgement
+    if(checkPortHasTarget(FLASK_PORT_STR) == True):
+        logger.info("checkPortHasTarget reports flask port has accept judgement")
+    else:
+        logger.error("checkPortHasTarget reports flask port does not have accept judgement")
 
-    #allow tcp to squid running on the twx default port 3128
-    #TODO: maybe skip this and expect rest calls to set up
+
     logger.info("Inserting default twx rules")
-    # rule_allow_twx_inbound_default = iptc.Rule()
-    # rule_allow_twx_inbound_default.protocol = "tcp"
-    # match = rule_allow_twx_inbound_default.create_match("tcp")
-    # match.dport = SQUID_PORT_DEFAULT_STR #must be string
-    # rule_allow_twx_inbound_default.target = iptc.Target(rule_allow_twx_inbound_default, "ACCEPT")
-    # input_chain.insert_rule(rule_allow_twx_inbound_default)
-
-
 
     for i in range(ALLOWED_TWX_PORT_MIN, ALLOWED_TWX_PORT_MAX):
         port = "%s" % i
+
+        #inbound ports
         iptablesInsertRuleInbound(port)
+
+        #sanity check squid port has accept judgement
+        if(isTWXPortInboundAccept(port) == True):
+            logger.debug("isTWXPortInboundAccept reports port %s has accept judgement" % port)
+        else:
+            logger.error("isTWXPortInboundAccept reports port %s does not have accept judgement" % port)
+
+        #outbound ports
         iptablesInsertRuleOutbound(port)
 
-    #allow outbound traffic on twx default port 3128
-    # logger.info("Inserting default twx outbound rule")
-    # rule_allow_twx_outbound_default = iptc.Rule()
-    # rule_allow_twx_outbound_default.protocol = "tcp"
-    # match = rule_allow_twx_outbound_default.create_match("tcp")
-    # match.sport = SQUID_PORT_DEFAULT_STR #must be string
-    # rule_allow_twx_outbound_default.target = iptc.Target(rule_allow_twx_outbound_default, "ACCEPT")
-    # output_chain.insert_rule(rule_allow_twx_outbound_default)
+        if(isTWXPortOutboundAccept(port) == True):
+            logger.debug("isTWXPortOutboundAccept reports platform port %s has accept judgement" % port)
+        else:
+            logger.error("isTWXPortOutboundAccept reports platform port %s does not have accept judgement" % port)
 
     #TODO: set default policy on INPUT and OUTPUT to drop
     #iptc.easy.set_policy
@@ -648,28 +644,13 @@ def startup():
         #this_rule = "proto: %s, target: %s" % (rule.protocol, rule.target._get_target())
         rules_str = "%s\n%s" % (rules_str, rule)
 
-    #sanity check squid port has accept judgement
-    if(isTWXPortInboundAccept(SQUID_PORT_DEFAULT_STR) == True):
-        logger.info("isTWXPortInboundAccept reports platform port has accept judgement")
-    else:
-        logger.error("isTWXPortInboundAccept reports platform port does not have accept judgement")
-
-    if(isTWXPortOutboundAccept(SQUID_PORT_DEFAULT_STR) == True):
-        logger.info("isTWXPortOutboundAccept reports platform port has accept judgement")
-    else:
-        logger.error("isTWXPortOutboundAccept reports platform port does not have accept judgement")
-
-    if(checkPortHasTarget(FLASK_PORT_STR) == True):
-        logger.info("checkPortHasTarget reports flask port has accept judgement")
-    else:
-        logger.error("checkPortHasTarget reports flask port does not have accept judgement")
-
     #print all rules
     logger.info("Startup completed. Current rules:\n %s" %  rules_str)
 
 
 
 def shutdown():
+    #probably just easier to rely on docker container stop
     #drop all of caltrops rules on relevant chains, likely input, output and forward
     logger.info("Shutting down caltrops")
 

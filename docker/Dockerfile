@@ -1,7 +1,7 @@
 FROM debian:buster-20220316
-#FROM debian:bullseye-latest
 
 #run in a privileged container - iptables is a privileged feature
+#docker run --name caltrops --privileged=true -p 5000:5000 caltrops
 
 RUN mkdir /opt/caltrops
 
@@ -72,11 +72,7 @@ RUN /usr/sbin/squid -N -f /etc/squid/squid.conf -z
 #squid config check
 RUN /usr/sbin/squid -k parse
 
-#
-USER root
-
-#start the squid service, which runs a subprocess as the user set in the config
-RUN /usr/sbin/squid -YCd 1 -f /etc/squid/squid.conf
+#squid may have to run as part of the entrypoint
 
 ###############
 #ports
@@ -87,6 +83,9 @@ EXPOSE 5000
 #proxy ports for edge devices. synchronize with the allowed ports in the squid config
 EXPOSE 3128-3148
 
+USER root
+
+
 ################
 #deploy our flask app
 
@@ -96,4 +95,6 @@ RUN mkdir /opt/caltrops/www
 ################
 #run the caltrops app as the container entrypoint
 
-ENTRYPOINT python3 /opt/caltrops/caltrops.py
+COPY entrypoint.sh /opt/caltrops/entrypoint.sh
+
+ENTRYPOINT /bin/bash /opt/caltrops/entrypoint.sh
