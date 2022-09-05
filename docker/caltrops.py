@@ -48,6 +48,8 @@ INPUT_CHAIN_NAME = "INPUT"
 OUTPUT_CHAIN_NAME = "OUTPUT"
 FORWARD_CHAIN_NAME = "FORWARD"
 
+PORT_PARAM_NAME = "port"
+
 DUMMY_STR = "python should make this easier"
 STR_CLASS = DUMMY_STR.__class__
 DICT_CLASS = {DUMMY_STR : DUMMY_STR}.__class__
@@ -70,7 +72,7 @@ def drop_twx_platform_inbound():
 
     #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 3128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
 
-    port_arg = request.args.get("port")
+    port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
     if(port_arg != None):
         if(isValidPort(port_arg)):
@@ -121,7 +123,7 @@ def drop_twx_platform_inbound():
 @app.route('/reject_twx_inbound')
 def reject_twx_platform_inbound():
 
-    port_arg = request.args.get("port")
+    port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
     if(port_arg != None):
         if(isValidPort(port_arg)):
@@ -174,7 +176,7 @@ def accept_twx_platform_inbound():
 
     #inbound dest port?
 
-    port_arg = request.args.get("port")
+    port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
     if(port_arg != None):
         if(isValidPort(port_arg)):
@@ -196,7 +198,7 @@ def accept_twx_platform_inbound():
         logger.warning("Skipping adding accept rule for platform inbound port. Already ACCEPTing")
 
         #still a successful handling of a request
-        return build_rule_change_response(200, "{ 'change': 'SKIP' }")
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
     #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
 
@@ -215,16 +217,16 @@ def accept_twx_platform_inbound():
 
     #check our rule change, and report in response
     if(isTWXPortInboundAccept(accept_port)):
-        return build_rule_change_response(200, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
-        return build_rule_change_response(500, "{ 'change': 'FAIL' }")
+        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
 ##################
 #TWX -> edge, outbound from platform traffic
 
 @app.route('/accept_twx_outbound')
 def accept_twx_platform_outbound():
-    port_arg = request.args.get("port")
+    port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
     if(port_arg != None):
         if(isValidPort(port_arg)):
@@ -246,7 +248,7 @@ def accept_twx_platform_outbound():
         logger.warning("Skipping adding accept rule for platform outbound port. Already ACCEPTing")
 
         #still a successful handling of a request
-        return build_rule_change_response(200, "{ 'change': 'SKIP' }")
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
     #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
 
@@ -265,14 +267,14 @@ def accept_twx_platform_outbound():
 
     #check our rule change, and report in response
     if(isTWXPortOutboundAccept(accept_port)):
-        return build_rule_change_response(200, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
-        return build_rule_change_response(500, "{ 'change': 'FAIL' }")
+        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
 @app.route('/drop_twx_outbound')
 def drop_twx_platform_outbound():
 
-    port_arg = request.args.get("port")
+    port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
     if(port_arg != None):
         if(isValidPort(port_arg)):
@@ -294,7 +296,7 @@ def drop_twx_platform_outbound():
         logger.warning("Skipping adding DROP rule for platform outbound port. Already DROPping")
 
         #still a successful handling of a request
-        return build_rule_change_response(200, "{ 'change': 'SKIP' }")
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
     #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
 
@@ -314,13 +316,13 @@ def drop_twx_platform_outbound():
 
     #check our rule change, and report in response
     if(isTWXPortOutboundDrop(drop_port)):
-        return build_rule_change_response(200, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
-        return build_rule_change_response(500, "{ 'change': 'FAIL' }")
+        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
 @app.route('/reject_twx_outbound')
 def reject_twx_platform_outbound():
-    port_arg = request.args.get("port")
+    port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
     if(port_arg != None):
         if(isValidPort(port_arg)):
@@ -342,7 +344,7 @@ def reject_twx_platform_outbound():
         logger.warning("Skipping adding reject rule for platform outbound port. Already REJECTing")
 
         #still a successful handling of a request
-        return build_rule_change_response(200, "{ 'change': 'SKIP' }")
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
     #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
 
@@ -361,13 +363,50 @@ def reject_twx_platform_outbound():
 
     #check our rule change, and report in response
     if(isTWXPortOutboundReject(reject_port)):
-        return build_rule_change_response(200, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
-        return build_rule_change_response(500, "{ 'change': 'FAIL' }")
+        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
-@app.route('/shutdown')
-def caltrops_shutdown():
-    pass
+@app.route("/get_rules")
+def get_rules():
+
+    #FILTER_TABLE_NAME
+    ##INPUT
+    ###rule 1
+    ###rule 2
+    ###rule 3
+    ##OUTPUT
+    ###rule 1
+    ###rule 2
+    ###rule 3
+    ##FORWARD
+    #...
+
+
+    #rule_data = iptc.easy.dump_table(FILTER_TABLE_NAME)
+    rule_data = {}
+    rule_data.update( { FILTER_TABLE_NAME : {INPUT_CHAIN_NAME : [], OUTPUT_CHAIN_NAME : [], FORWARD_CHAIN_NAME : [] } } )
+
+    for rule in iptc.easy.dump_chain(FILTER_TABLE_NAME, INPUT_CHAIN_NAME):
+        rule_str = ("%s" % rule)
+
+        rule_data.get(FILTER_TABLE_NAME).get(INPUT_CHAIN_NAME).append( rule_str )
+
+    for rule in iptc.easy.dump_chain(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME):
+        rule_str = "%s" % rule
+
+        rule_data.get(FILTER_TABLE_NAME).get(OUTPUT_CHAIN_NAME).append( rule_str )
+
+    for rule in iptc.easy.dump_chain(FILTER_TABLE_NAME, FORWARD_CHAIN_NAME):
+        rule_str = "%s" % rule
+
+        rule_data.get(FILTER_TABLE_NAME).get(FORWARD_CHAIN_NAME).append( rule_str )
+
+    return app.response_class(
+        response=json.dumps(rule_data, sort_keys=True),
+        status=HTTP_OK,
+        mimetype='application/json'
+    )
 
 @app.route('/info')
 def home():
@@ -608,7 +647,9 @@ def startup():
     logger.info("Inserting default twx rules")
 
     for i in range(ALLOWED_TWX_PORT_MIN, ALLOWED_TWX_PORT_MAX):
-        port = "%s" % i
+
+        #need the string form
+        port = str( i )
 
         #inbound ports
         iptablesInsertRuleInbound(port)
@@ -647,43 +688,12 @@ def startup():
     #print all rules
     logger.info("Startup completed. Current rules:\n %s" %  rules_str)
 
-
-
-def shutdown():
-    #probably just easier to rely on docker container stop
-    #drop all of caltrops rules on relevant chains, likely input, output and forward
-    logger.info("Shutting down caltrops")
-
-
-
-    pass
-
-
-
-
 if __name__ == '__main__':
 
     #TODO: config directives
     server = Process(target=app.run, args=('0.0.0.0', FLASK_PORT))
 
     startup()
-
-    #######################
-    #for debug - quit after a set time period
-    def quitfn():
-        logger.info("Quit thread started")
-        time.sleep(200)
-
-        shutdown()
-
-        logger.info("Exiting...")
-        server.terminate()
-
-    #launch our quit thread
-    #for debugging and quick testing
-    #t = Thread(target=quitfn, daemon=True)
-    #t.start()
-    #######################
 
     #run flask app
     server.start()
