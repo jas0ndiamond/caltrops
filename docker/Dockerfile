@@ -1,31 +1,35 @@
 FROM debian:buster-20220316
+MAINTAINER jason.a.diamond@gmail.com
 
-#run in a privileged container - iptables is a privileged feature
-#docker run --name caltrops --privileged=true -p 5000:5000 caltrops
+#run this in a privileged container - iptables is a privileged feature
+#docker run --name caltrops --privileged=true -p 5000:5000 jas0ndiamond/caltrops
 
 RUN mkdir /opt/caltrops
 
 #core os setup
-RUN apt-get -y update
-RUN apt-get -y upgrade
-RUN apt-get -y install apt-utils readline-common libterm-readline-gnu-perl libreadline-dev
+RUN /usr/bin/apt-get -y update
+RUN /usr/bin/apt-get -y upgrade
+RUN /usr/bin/apt-get -y install apt-utils readline-common libterm-readline-gnu-perl libreadline-dev
 
 #os setup for python3 and its depos
 #python depos for compilation, excessive and borrowed from another project
 
-RUN apt-get -y install python3 python3-pip gcc g++ make automake autoconf build-essential apache2-utils git g++-multilib libssl-dev libssl1.1 zlib1g-dev build-essential libffi-dev libbz2-dev libncursesw5-dev libgdbm-dev liblzma-dev libsqlite3-dev tk-dev uuid-dev libreadline-dev python3 python3-dev libgdbm-compat-dev libjpeg-dev zlib1g-dev apache-tools procps iptables squid
+RUN /usr/bin/apt-get -y install python3 python3-pip gcc g++ make automake autoconf build-essential apache2-utils git g++-multilib libssl-dev libssl1.1 zlib1g-dev build-essential libffi-dev libbz2-dev libncursesw5-dev libgdbm-dev liblzma-dev libsqlite3-dev tk-dev uuid-dev libreadline-dev python3 python3-dev libgdbm-compat-dev libjpeg-dev zlib1g-dev apache-tools procps iptables squid
+
+#clean up apt
+RUN /usr/bin/apt-get clean && rm -rf /var/lib/apt/lists
 
 #debug tools
-RUN apt-get -y install nano telnet
+#RUN /usr/bin/apt-get -y install nano vim telnet
 
-RUN python3 -V
+RUN /usr/bin/python3 -V
 
 #python setup - upgrade pip and install core packages
-RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install wheel
+RUN /usr/bin/python3 -m pip install --upgrade pip
+RUN /usr/bin/python3 -m pip install wheel
 
 #iptables
-RUN python3 -m pip install python-iptables flask
+RUN /usr/bin/python3 -m pip install python-iptables flask
 
 #####################
 #squid config - 4.8
@@ -56,7 +60,7 @@ RUN chmod 775 /var/run/squid
 RUN chown proxy:proxy /var/run/squid
 
 #setup our user
-RUN /usr/bin/htpasswd -b -c /etc/squid/passwd_basic twxproxyuser twxproxypass
+RUN /usr/bin/htpasswd -b -c /etc/squid/passwd_basic myproxyuser myproxypass
 RUN chown proxy:proxy /etc/squid/passwd_basic
 
 #########
