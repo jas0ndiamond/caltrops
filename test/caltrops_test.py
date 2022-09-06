@@ -11,6 +11,8 @@ import time
 PROTOCOL = "http"
 CALTROPS_IP = "172.20.0.2" #definitely double check this
 CALTROPS_PORT = 5000
+CALTROPS_URL_BASE = "%s://%s:%d" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT)
+
 MANAGE_CONTAINER = False
 
 PORT_MIN = 3128
@@ -74,6 +76,116 @@ class caltrops_tests(unittest.TestCase):
         regex = ".*%d.*%s.*" % (CALTROPS_PORT, JUDGEMENT_ACCEPT)
         self.assertNotEqual( re.match(regex, rules[i] ), None )
 
+    def test_rule_reset(self):
+
+        #toggle judgements on a bunch of ports
+
+        #inbound
+        payload = {'port': 3128}
+        response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3130}
+        response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3132}
+        response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3134}
+        response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3129}
+        response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3131}
+        response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3133}
+        response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3135}
+        response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        #outbound
+        payload = {'port': 3138}
+        response = requests.get("%s/reject_outbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3140}
+        response = requests.get("%s/reject_outbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3142}
+        response = requests.get("%s/reject_outbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3144}
+        response = requests.get("%s/reject_outbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3139}
+        response = requests.get("%s/drop_outbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3141}
+        response = requests.get("%s/drop_outbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3143}
+        response = requests.get("%s/drop_outbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        payload = {'port': 3145}
+        response = requests.get("%s/drop_outbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        #reset rules
+        response = requests.get("%s/reset_rules" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
+
+        #confirm all accept inbound
+        #expect 20 squid ports and 1 caltrops port open, with accept judgement
+
+        #test host and port are up and we get the expected iptables rules
+        rules = self.get_rules_sorted(FILTER_TABLE_NAME, INPUT_CHAIN_NAME)
+
+        #squid ports + caltrops port
+        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 1)
+
+        i = 0
+        for port in range(PORT_MIN, PORT_MAX):
+            regex = ".*%d.*%s.*" % (port, JUDGEMENT_ACCEPT)
+            self.assertNotEqual( re.match(regex, rules[i]), None, "Accept judgement on input port %d" % port  )
+            i+=1
+
+        #caltrops port last
+        regex = ".*%d.*%s.*" % (CALTROPS_PORT, JUDGEMENT_ACCEPT)
+        self.assertNotEqual( re.match(regex, rules[i] ), None )
+
+        #confirm all accept outbound
+        #test host and port are up and we get the expected iptables rules
+        rules = self.get_rules_sorted(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
+
+        #squid ports + caltrops port
+        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 1)
+
+        i = 0
+        for port in range(PORT_MIN, PORT_MAX):
+            regex = ".*%d.*%s.*" % (port, JUDGEMENT_ACCEPT)
+            self.assertNotEqual( re.match(regex, rules[i]), None, "Accept judgement on output port %d" % port  )
+            i+=1
+
+        #caltrops port last
+        regex = ".*%d.*%s.*" % (CALTROPS_PORT, JUDGEMENT_ACCEPT)
+        self.assertNotEqual( re.match(regex, rules[i] ), None )
+
     def test_input_toggle_judgement(self):
 
         #reset rules
@@ -98,7 +210,8 @@ class caltrops_tests(unittest.TestCase):
 
         #change judgement to reject
         payload = {'port': target_port}
-        response = requests.get("%s://%s:%d/reject_twx_inbound" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT), params=payload)
+        response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
 
         time.sleep(1)
 
@@ -118,7 +231,8 @@ class caltrops_tests(unittest.TestCase):
         ########
         #change judgement to drop
         payload = {'port': target_port}
-        response = requests.get("%s://%s:%d/drop_twx_inbound" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT), params=payload)
+        response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
 
         time.sleep(1)
 
@@ -137,7 +251,8 @@ class caltrops_tests(unittest.TestCase):
         ########
         #change judgement to drop
         payload = {'port': target_port}
-        response = requests.get("%s://%s:%d/drop_twx_inbound" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT), params=payload)
+        response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
 
         time.sleep(1)
 
@@ -152,7 +267,8 @@ class caltrops_tests(unittest.TestCase):
 
         #change judgement to accept
         payload = {'port': target_port}
-        response = requests.get("%s://%s:%d/accept_twx_inbound" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT), params=payload)
+        response = requests.get("%s/accept_inbound" % (CALTROPS_URL_BASE), params=payload)
+        self.assertEqual(HTTP_OK, response.status_code)
 
         time.sleep(1)
 
@@ -165,14 +281,18 @@ class caltrops_tests(unittest.TestCase):
 
         self.assertNotEqual( re.match(regex, port_rules[0]), None, "Expecting ACCEPT judgement in rule %s" % port_rules[0])
 
+    def test_set_rule_invalid_port(self):
+        pass
 
     def test_output_toggle_judgement(self):
         pass
 
+
+
     ##################
     #util functions
     def get_rules_sorted(self, filter=FILTER_TABLE_NAME, chain=INPUT_CHAIN_NAME):
-        response = requests.get("%s://%s:%d/get_rules" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT))
+        response = requests.get("%s/get_rules" % (CALTROPS_URL_BASE))
 
         self.assertEqual(HTTP_OK, response.status_code)
 
@@ -188,7 +308,7 @@ class caltrops_tests(unittest.TestCase):
         return sorted(rules)
 
     def get_rule_str(self, port, filter=FILTER_TABLE_NAME, chain=INPUT_CHAIN_NAME):
-        response = requests.get("%s://%s:%d/get_rules" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT))
+        response = requests.get("%s/get_rules" % (CALTROPS_URL_BASE))
 
         self.assertEqual(HTTP_OK, response.status_code)
 
@@ -207,7 +327,7 @@ class caltrops_tests(unittest.TestCase):
     def get_rule_port_judgements(self):
         #TODO: implement fully
         #return a hash of sorted port numbers and their respective judgements
-        response = requests.get("%s://%s:%d/get_rules" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT))
+        response = requests.get("%s/get_rules" % (CALTROPS_URL_BASE))
 
         self.assertEqual(HTTP_OK, response.status_code)
 

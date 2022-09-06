@@ -21,21 +21,19 @@ flask_www_dir = "%s/www" % root_dir
 
 app = Flask(__name__, static_url_path='/www', static_folder=flask_www_dir)
 
-active_twx_ports = {}
-
 HTTP_OK = 200
 HTTP_FAIL = 500
 
 #ensure this port range does contain the flask port
-ALLOWED_TWX_PORT_MIN = 3128
-ALLOWED_TWX_PORT_MAX = 3148
+ALLOWED_PROXY_PORT_MIN = 3128
+ALLOWED_PROXY_PORT_MAX = 3148
 
-#ensure this port does not conflict with the twx port range
+#ensure this port does not conflict with the proxy port range
 FLASK_PORT = 5000
 FLASK_PORT_STR = "%s" % FLASK_PORT
 
 #TODO: dynamic or else this will impact multiple edge devices
-SQUID_PORT_DEFAULT = ALLOWED_TWX_PORT_MIN
+SQUID_PORT_DEFAULT = ALLOWED_PROXY_PORT_MIN
 SQUID_PORT_DEFAULT_STR = "%s" % SQUID_PORT_DEFAULT
 
 FILTER_TABLE_NAME = "filter"
@@ -60,15 +58,15 @@ logger.info("Using flask www directory: %s" % flask_www_dir)
 
 #####################################
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def root():
     return redirect("/info")
 
 ##################
-#edge -> TWX, inbound to platform traffic
+#edge -> platform, inbound to platform traffic
 
-@app.route('/drop_twx_inbound')
-def drop_twx_platform_inbound():
+@app.route('/drop_inbound', methods=['GET'])
+def drop_inbound():
 
     #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 3128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
 
@@ -87,11 +85,11 @@ def drop_twx_platform_inbound():
         #default if no arg is passed
         drop_port = SQUID_PORT_DEFAULT_STR
 
-    logger.debug("Attempting to apply DROP rule for inbound TWX traffic on port %s" % drop_port )
+    logger.debug("Attempting to apply DROP rule for inbound traffic on port %s" % drop_port )
 
     #inbound dest port?
 
-    if( isTWXPortInboundDrop(drop_port) == True ):
+    if( isInboundDropRuleActive(drop_port) == True ):
         logger.warning("Skipping adding DROP rule for platform inbound port. Already DROPping")
 
         #still a successful handling of a request
@@ -109,19 +107,19 @@ def drop_twx_platform_inbound():
 
         current_rule = getRuleAffectingPort(drop_port)
 
-    #drop tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
+    #drop tcp to caltrops on port the squid port 3128, which routes traffic to the platform
 
     iptablesInsertRuleInbound(drop_port, JUDGEMENT_DROP)
 
     #check our rule change, and report in response
-    if(isTWXPortInboundDrop(drop_port)):
+    if(isInboundDropRuleActive(drop_port)):
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
         return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
 
-@app.route('/reject_twx_inbound')
-def reject_twx_platform_inbound():
+@app.route('/reject_inbound', methods=['GET'])
+def reject_inbound():
 
     port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
@@ -138,11 +136,11 @@ def reject_twx_platform_inbound():
         #default if no arg is passed
         reject_port = SQUID_PORT_DEFAULT_STR
 
-    logger.debug("Attempting to add REJECT rule for inbound TWX traffic on port %s" % reject_port )
+    logger.debug("Attempting to add REJECT rule for inbound traffic on port %s" % reject_port )
 
     #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 3128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
 
-    if( isTWXPortInboundReject(reject_port) == True ):
+    if( isInboundRejectRuleActive(reject_port) == True ):
         logger.warning("Skipping adding REJECT rule for platform inbound port. Already REJECTing")
 
         #still a successful handling of a request
@@ -160,18 +158,18 @@ def reject_twx_platform_inbound():
 
         current_rule = getRuleAffectingPort(reject_port)
 
-    #drop tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
+    #drop tcp to caltrops on port the squid port 3128, which routes traffic to the platform
 
     iptablesInsertRuleInbound(reject_port, JUDGEMENT_REJECT)
 
     #check our rule change, and report in response
-    if(isTWXPortInboundReject(reject_port)):
+    if(isInboundRejectRuleActive(reject_port)):
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
         return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
-@app.route('/accept_twx_inbound')
-def accept_twx_platform_inbound():
+@app.route('/accept_inbound', methods=['GET'])
+def accept_inbound():
     #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 3128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
 
     #inbound dest port?
@@ -191,16 +189,16 @@ def accept_twx_platform_inbound():
         #default if no arg is passed
         accept_port = SQUID_PORT_DEFAULT_STR
 
-    logger.debug("Attempting to apply ACCEPT rule for inbound TWX traffic on port %s" % accept_port )
+    logger.debug("Attempting to apply ACCEPT rule for inbound traffic on port %s" % accept_port )
 
     #check for existing rule
-    if(isTWXPortInboundAccept(accept_port)):
+    if(isInboundAcceptRuleActive(accept_port)):
         logger.warning("Skipping adding accept rule for platform inbound port. Already ACCEPTing")
 
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
+    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the platform
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(accept_port)
@@ -216,16 +214,16 @@ def accept_twx_platform_inbound():
     iptablesInsertRuleInbound(accept_port, JUDGEMENT_ACCEPT)
 
     #check our rule change, and report in response
-    if(isTWXPortInboundAccept(accept_port)):
+    if(isInboundAcceptRuleActive(accept_port)):
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
         return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
 ##################
-#TWX -> edge, outbound from platform traffic
+#platform -> edge, outbound from platform traffic
 
-@app.route('/accept_twx_outbound')
-def accept_twx_platform_outbound():
+@app.route('/accept_outbound', methods=['GET'])
+def accept_outbound():
     port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
     if(port_arg != None):
@@ -241,16 +239,16 @@ def accept_twx_platform_outbound():
         #default if no arg is passed
         accept_port = SQUID_PORT_DEFAULT_STR
 
-    logger.debug("Attempting to apply ACCEPT rule for outbound TWX traffic on port %s" % accept_port )
+    logger.debug("Attempting to apply ACCEPT rule for outbound traffic on port %s" % accept_port )
 
     #check for existing rule
-    if(isTWXPortOutboundAccept(accept_port)):
+    if(isOutboundAcceptRuleActive(accept_port)):
         logger.warning("Skipping adding accept rule for platform outbound port. Already ACCEPTing")
 
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
+    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the platform
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(accept_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -266,13 +264,13 @@ def accept_twx_platform_outbound():
     iptablesInsertRuleOutbound(accept_port, JUDGEMENT_ACCEPT)
 
     #check our rule change, and report in response
-    if(isTWXPortOutboundAccept(accept_port)):
+    if(isOutboundAcceptRuleActive(accept_port)):
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
         return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
-@app.route('/drop_twx_outbound')
-def drop_twx_platform_outbound():
+@app.route('/drop_outbound', methods=['GET'])
+def drop_outbound():
 
     port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
@@ -289,16 +287,16 @@ def drop_twx_platform_outbound():
         #default if no arg is passed
         drop_port = SQUID_PORT_DEFAULT_STR
 
-    logger.debug("Attempting to apply DROP rule for outbound TWX traffic on port %s" % drop_port )
+    logger.debug("Attempting to apply DROP rule for outbound traffic on port %s" % drop_port )
 
     #check for existing rule
-    if(isTWXPortOutboundDrop(drop_port)):
+    if(isOutboundDropRuleActive(drop_port)):
         logger.warning("Skipping adding DROP rule for platform outbound port. Already DROPping")
 
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
+    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the platform
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(drop_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -315,13 +313,13 @@ def drop_twx_platform_outbound():
     iptablesInsertRuleOutbound(drop_port, JUDGEMENT_DROP)
 
     #check our rule change, and report in response
-    if(isTWXPortOutboundDrop(drop_port)):
+    if(isOutboundDropRuleActive(drop_port)):
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
         return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
-@app.route('/reject_twx_outbound')
-def reject_twx_platform_outbound():
+@app.route('/reject_outbound', methods=['GET'])
+def reject_outbound():
     port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
     if(port_arg != None):
@@ -337,16 +335,16 @@ def reject_twx_platform_outbound():
         #default if no arg is passed
         reject_port = SQUID_PORT_DEFAULT_STR
 
-    logger.debug("Attempting to apply REJECT rule for outbound TWX traffic on port %s" % reject_port )
+    logger.debug("Attempting to apply REJECT rule for outbound traffic on port %s" % reject_port )
 
     #check for existing rule
-    if(isTWXPortOutboundReject(reject_port)):
+    if(isOutboundRejectRuleActive(reject_port)):
         logger.warning("Skipping adding reject rule for platform outbound port. Already REJECTing")
 
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the twx platform
+    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the platform
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(reject_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -362,13 +360,15 @@ def reject_twx_platform_outbound():
     iptablesInsertRuleOutbound(reject_port, JUDGEMENT_REJECT)
 
     #check our rule change, and report in response
-    if(isTWXPortOutboundReject(reject_port)):
+    if(isOutboundRejectRuleActive(reject_port)):
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
     else:
         return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
 
-@app.route("/get_rules")
+@app.route("/get_rules", methods=['GET'])
 def get_rules():
+
+    #no sorting, order matters
 
     #FILTER_TABLE_NAME
     ##INPUT
@@ -408,7 +408,19 @@ def get_rules():
         mimetype='application/json'
     )
 
-@app.route('/info')
+@app.route('/reset_rules', methods=['GET'])
+def reset_rules():
+
+    logger.info("Resetting iptables rules")
+
+    flushRules()
+
+    if(setDefaultRules() == True):
+        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
+    else:
+        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+
+@app.route('/info', methods=['GET'])
 def home():
 
     logger.info("Displaying iptables info")
@@ -496,7 +508,7 @@ def iptablesDeleteRuleOutbound(rule):
 def isValidPort(port_str):
     port_num = int(port_str)
     return (
-        (port_num >= ALLOWED_TWX_PORT_MIN and port_num <= ALLOWED_TWX_PORT_MAX) and
+        (port_num >= ALLOWED_PROXY_PORT_MIN and port_num <= ALLOWED_PROXY_PORT_MAX) and
         port_num != FLASK_PORT)
 
 def build_rule_change_response(status_code, data={}):
@@ -582,35 +594,84 @@ def checkPortHasTarget(port_str, table=FILTER_TABLE_NAME, chain=INPUT_CHAIN_NAME
 
     return retval
 
-def isTWXPortInboundAccept(port_str):
+def isInboundAcceptRuleActive(port_str):
     #edge -> platform
 
     return checkPortHasTarget(port_str, FILTER_TABLE_NAME, INPUT_CHAIN_NAME, JUDGEMENT_ACCEPT )
 
-def isTWXPortInboundReject(port_str):
+def isInboundRejectRuleActive(port_str):
     #edge -> platform
 
     return checkPortHasTarget(port_str, FILTER_TABLE_NAME, INPUT_CHAIN_NAME, JUDGEMENT_REJECT )
 
-def isTWXPortInboundDrop(port_str):
+def isInboundDropRuleActive(port_str):
     #edge -> platform
 
     return checkPortHasTarget(port_str, FILTER_TABLE_NAME, INPUT_CHAIN_NAME, JUDGEMENT_DROP )
 
-def isTWXPortOutboundAccept(port_str):
+def isOutboundAcceptRuleActive(port_str):
     # platform => edge
 
     return checkPortHasTarget(port_str, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, JUDGEMENT_ACCEPT )
 
-def isTWXPortOutboundReject(port_str):
+def isOutboundRejectRuleActive(port_str):
     # platform => edge
 
     return checkPortHasTarget(port_str, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, JUDGEMENT_REJECT )
 
-def isTWXPortOutboundDrop(port_str):
+def isOutboundDropRuleActive(port_str):
     # platform => edge
 
     return checkPortHasTarget(port_str, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME, JUDGEMENT_DROP )
+
+def flushRules():
+    logger.info("Flushing default caltrops rules")
+    iptc.Table(iptc.Table.FILTER).flush()
+
+def setDefaultRules():
+    retval = True
+
+    logger.info("Inserting default caltrops rules")
+
+    iptablesInsertRuleInbound(FLASK_PORT_STR)
+    iptablesInsertRuleOutbound(FLASK_PORT_STR)
+
+    #sanity check squid port has accept judgement
+    if(checkPortHasTarget(FLASK_PORT_STR) == True):
+        logger.info("checkPortHasTarget reports flask port has accept judgement")
+    else:
+        logger.error("checkPortHasTarget reports flask port does not have accept judgement")
+        retval = False
+
+
+    logger.info("Inserting default rules")
+
+    for i in range(ALLOWED_PROXY_PORT_MIN, ALLOWED_PROXY_PORT_MAX):
+
+        #need the string form
+        port = str( i )
+
+        #inbound ports
+        iptablesInsertRuleInbound(port)
+
+        #sanity check squid port has accept judgement
+        if(isInboundAcceptRuleActive(port) == True):
+            logger.debug("isInboundAcceptRuleActive reports port %s has accept judgement" % port)
+        else:
+            logger.error("isInboundAcceptRuleActive reports port %s does not have accept judgement" % port)
+            retval = False
+
+        #outbound ports
+        iptablesInsertRuleOutbound(port)
+
+        if(isOutboundAcceptRuleActive(port) == True):
+            logger.debug("isOutboundAcceptRuleActive reports platform port %s has accept judgement" % port)
+        else:
+            logger.error("isOutboundAcceptRuleActive reports platform port %s does not have accept judgement" % port)
+
+            retval = False
+
+    return retval
 
 def startup():
     #add the basic routing and perform any setup
@@ -631,42 +692,9 @@ def startup():
     #input_chain.set_policy(JUDGEMENT_DROP)
     #output_chain.set_policy(JUDGEMENT_DROP)
 
-    #allow tcp to caltrops
-    logger.info("Inserting default caltrops inbound rules")
-
-    iptablesInsertRuleInbound(FLASK_PORT_STR)
-    iptablesInsertRuleOutbound(FLASK_PORT_STR)
-
-    #sanity check squid port has accept judgement
-    if(checkPortHasTarget(FLASK_PORT_STR) == True):
-        logger.info("checkPortHasTarget reports flask port has accept judgement")
-    else:
-        logger.error("checkPortHasTarget reports flask port does not have accept judgement")
-
-
-    logger.info("Inserting default twx rules")
-
-    for i in range(ALLOWED_TWX_PORT_MIN, ALLOWED_TWX_PORT_MAX):
-
-        #need the string form
-        port = str( i )
-
-        #inbound ports
-        iptablesInsertRuleInbound(port)
-
-        #sanity check squid port has accept judgement
-        if(isTWXPortInboundAccept(port) == True):
-            logger.debug("isTWXPortInboundAccept reports port %s has accept judgement" % port)
-        else:
-            logger.error("isTWXPortInboundAccept reports port %s does not have accept judgement" % port)
-
-        #outbound ports
-        iptablesInsertRuleOutbound(port)
-
-        if(isTWXPortOutboundAccept(port) == True):
-            logger.debug("isTWXPortOutboundAccept reports platform port %s has accept judgement" % port)
-        else:
-            logger.error("isTWXPortOutboundAccept reports platform port %s does not have accept judgement" % port)
+    flushRules()
+    if( setDefaultRules() == False ):
+        raise Exception("Problem setting default rules")
 
     #TODO: set default policy on INPUT and OUTPUT to drop
     #iptc.easy.set_policy

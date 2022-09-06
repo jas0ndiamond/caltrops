@@ -14,7 +14,7 @@ sleep 3
 /usr/bin/python3 /opt/caltrops/caltrops.py &
 
 #buy some time to start up the webserver
-sleep 3
+sleep 2
 
 PORT_MIN=3128
 PORT_MAX=3148
