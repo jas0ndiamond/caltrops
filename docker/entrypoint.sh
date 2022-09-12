@@ -3,6 +3,7 @@
 echo "Launching Caltrops entrypoint"
 
 #launch squid daemon (does not block)
+#debug output too
 /usr/sbin/squid -YCd 1 -f /etc/squid/squid.conf
 
 echo "=============="
@@ -18,8 +19,10 @@ sleep 2
 
 PORT_MIN=3128
 PORT_MAX=3148
+PORT_CALTROPS=5000
 
-#TODO: port range for proxy connections
 echo "Caltrops is listening on ports $PORT_MIN - $PORT_MAX"
+echo "Caltrops UI is accessible via port $PORT_CALTROPS"
 
+#stay running
 sleep infinity
