@@ -2,7 +2,7 @@ FROM debian:buster-20220316
 MAINTAINER jason.a.diamond@gmail.com
 
 #run this in a privileged container - iptables is a privileged feature
-#docker run --name caltrops --privileged=true -p 5000:5000 jas0ndiamond/caltrops
+#docker run --name caltrops --privileged=true -p 5000:5000 -p 3128-3148:3128-3148 jas0ndiamond/caltrops
 
 RUN mkdir /opt/caltrops
 
@@ -76,7 +76,8 @@ RUN /usr/sbin/squid -N -f /etc/squid/squid.conf -z
 #squid config check
 RUN /usr/sbin/squid -k parse
 
-#squid may have to run as part of the entrypoint
+#squid technically ready to run at this point, but will
+#run as part of the entrypoint shell script
 
 ###############
 #ports
@@ -87,18 +88,25 @@ EXPOSE 5000
 #proxy ports for edge devices. synchronize with the allowed ports in the squid config
 EXPOSE 3128-3148
 
-USER root
-
-
 ################
 #deploy our flask app
 
+#switch back to root- have to run as root for iptables
+#root also owns /opt/ by default
+USER root
+
 COPY caltrops.py /opt/caltrops/caltrops.py
+
+#create caltrops web dir for ui resources
 RUN mkdir /opt/caltrops/www
+
+#TODO: copy ui resources to the caltrops www dir
 
 ################
 #run the caltrops app as the container entrypoint
 
 COPY entrypoint.sh /opt/caltrops/entrypoint.sh
+
+
 
 ENTRYPOINT /bin/bash /opt/caltrops/entrypoint.sh
