@@ -26,11 +26,6 @@ Retrieve the container from docker hub:
 docker pull jas0ndiamond/caltrops
 ```
 
-Alternatively, try building the image from github:
-```bash
-docker build -t jas0ndiamond/caltrops github.com/jas0ndiamond/caltrops
-```
-
 ### Quickstart
 
 Start Caltrops by executing:
@@ -44,13 +39,13 @@ docker pull jas0ndiamond/caltrops
 docker run --name jas0ndiamond/caltrops --privileged=true -p 5000:5000 -p 3128-3148:3128-3148
 ```
 
-The Caltrops UI is available at http://caltropshost:5000, which will display a simple readout of the iptables rules in place.
+The Caltrops UI is available at http://caltrops_host:5000, which will display a simple readout of the iptables rules in place.
 
 Connect your device to the proxy port. The default target for the proxy ports is ACCEPT, so a connection attempt should succeed. The proxy is configured by default with Basic auth in the Dockerfile, with user `myproxyuser`, and password `myproxypass`
 
 Connections through caltrops can also be tested with curl:
 ```bash
-curl -i --proxy "http://myproxyuser:myproxypass@caltropshost:3128"  "https://www.github.com"
+curl -i --proxy "http://myproxyuser:myproxypass@caltrops_host:3128"  "https://www.github.com"
 ```
 
 ### Affecting traffic
@@ -58,13 +53,13 @@ curl -i --proxy "http://myproxyuser:myproxypass@caltropshost:3128"  "https://www
 Affect the traffic judgments of the ports by issuing the following REST requests.
 
 For inbound traffic, specifically traffic originating from the client to Caltrops, use the following endpoints:
-* accept_inbound (http://caltropshost:5000/accept_inbound?port=myport)
-* drop_inbound (http://caltropshost:5000/drop_inbound?port=myport)
-* reject_inbound (http://caltropshost:5000/reject_inbound?port=myport)
+* accept_inbound (http://caltrops_host:5000/accept_inbound?port=myport)
+* drop_inbound (http://caltrops_host:5000/drop_inbound?port=myport)
+* reject_inbound (http://caltrops_host:5000/reject_inbound?port=myport)
 
 For example, to DROP traffic inbound from the client connected to caltrops on port 3131, the relevant rule can be set either with the following `curl` command, or with your REST library of choice:
 ```bash
-curl -i "http://caltropshost:5000/drop_inbound?port=3131"
+curl -i "http://caltrops_host:5000/drop_inbound?port=3131"
 ```
 
 An HTTP 200 will be returned on success, with field `change` set accordingly:
@@ -77,13 +72,13 @@ An HTTP 500 will be returned on an internal failure. Please report instances of 
 ---
 
 For outbound traffic, specifically traffic originating from the server to Caltrops, use the following endpoints:
-* accept_outbound (http://caltropshost:5000/accept_outbound?port=myport)
-* drop_outbound (http://caltropshost:5000/drop_outbound?port=myport)
-* reject_outbound (http://caltropshost:5000/reject_outbound?port=myport)
+* accept_outbound (http://caltrops_host:5000/accept_outbound?port=myport)
+* drop_outbound (http://caltrops_host:5000/drop_outbound?port=myport)
+* reject_outbound (http://caltrops_host:5000/reject_outbound?port=myport)
 
 For example, to REJECT traffic inbound from the client connected to caltrops on port 3131, the relevant rule can be set either with the following `curl` command, or with your REST library of choice:
 ```bash
-curl -i "http://caltropshost:5000/reject_outbound?port=3131"
+curl -i "http://caltrops_host:5000/reject_outbound?port=3131"
 ```
 
 An HTTP 200 will be returned on success, with field `change` set accordingly:
@@ -95,7 +90,7 @@ An HTTP 500 will be returned on an internal failure. Please report instances of 
 
 ---
 
-Rules can be reset to the startup default by issuing a request to `http://caltropshost:5000/reset_rules`
+Rules can be reset to the startup default by issuing a request to `http://caltrops_host:5000/reset_rules`
 
 ---
 
