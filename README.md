@@ -96,7 +96,7 @@ Rules can be reset to the startup default by issuing a request to `http://caltro
 
 The default proxy ports can be changed by modifying the container's squid config file, and the caltrops.py python application. Ensure that the new port range is published when the container is run.
 
-### Testing
+## Testing
 
 Basic tests can be executed from the project root directory by running:
 ```bash
@@ -104,7 +104,7 @@ Basic tests can be executed from the project root directory by running:
 python3 -m unittest test/caltrops_test.py
 ```
 
-### TODO
+## TODO
 * Rate-limiting iptables rules.
 * Probability-based packet loss rules.
 * Optional persistence of rules.
