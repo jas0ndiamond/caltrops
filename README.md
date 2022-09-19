@@ -1,7 +1,7 @@
 ## caltrops
 Caltrops is an application for simulating connectivity failures in a controlled manner- by allowing external management of iptables rules around proxy connections between software client/edge and server/platform.
 
-The Caltrops application runs in a container alongside instances of the [Squid proxy server](https://www.squid-cache.org), and legacy iptables. Web endpoints are exposed using [flask](https://flask.palletsprojects.com/) to allow iptables rules to be managed via requested issued from a command-line application like `curl` or `wget`, or with your REST library of choice, and test how your client/edge and/or server/platform reacts to varieties of connectivity loss.
+The Caltrops application runs in a container alongside instances of the [Squid proxy server](https://www.squid-cache.org), and legacy iptables. The container is available on DockerHub at https://hub.docker.com/r/jas0ndiamond/caltrops. Web endpoints are exposed using [flask](https://flask.palletsprojects.com/) to allow iptables rules to be managed via requested issued from a command-line application like `curl` or `wget`, or with your REST library of choice, and test how your client/edge and/or server/platform reacts to varieties of connectivity loss.
 
 By default, 20 ports (3128 through 3148, inclusive) are served by the squid instance for client connections. The intention is that one application connection policy should be used per proxy port on caltrops. An implication of this is that the iptables rule ordering should not affect connectivity for a client/edge application.
 
