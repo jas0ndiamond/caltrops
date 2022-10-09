@@ -9,6 +9,9 @@ The client/edge device must support proxy connections with basic authentication.
 
 Developed for testing IoT connectivity- specifically when operating virtual ThingWorx IoT Edge aircraft in project [thingworx-flightgear-edge](https://github.com/jas0ndiamond/thingworx-flightgear-edge)
 
+## Outline
+![caltrops](https://user-images.githubusercontent.com/7103526/194747935-c3bf107c-7836-45c1-b3c9-76b77639d2d4.png)
+
 ## Components
 * Python3
 * flask
