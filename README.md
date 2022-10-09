@@ -1,13 +1,16 @@
 ## caltrops
 Caltrops is an application for simulating connectivity failures in a controlled manner- by allowing external management of iptables rules around proxy connections between software client/edge and server/platform.
 
-The Caltrops application runs in a container alongside instances of the [Squid proxy server](https://www.squid-cache.org), and legacy iptables. Web endpoints are exposed using [flask](https://flask.palletsprojects.com/) to allow iptables rules to be managed via requested issued from a command-line application like `curl` or `wget`, or with your REST library of choice, and test how your client/edge and/or server/platform reacts to varieties of connectivity loss.
+The Caltrops application runs in a container alongside instances of the [Squid proxy server](https://www.squid-cache.org), and legacy iptables. The container is available on DockerHub at https://hub.docker.com/r/jas0ndiamond/caltrops. Web endpoints are exposed using [flask](https://flask.palletsprojects.com/) to allow iptables rules to be managed via requested issued from a command-line application like `curl` or `wget`, or with your REST library of choice, and test how your client/edge and/or server/platform reacts to varieties of connectivity loss.
 
 By default, 20 ports (3128 through 3148, inclusive) are served by the squid instance for client connections. The intention is that one application connection policy should be used per proxy port on caltrops. An implication of this is that the iptables rule ordering should not affect connectivity for a client/edge application.
 
 The client/edge device must support proxy connections with basic authentication.
 
 Developed for testing IoT connectivity- specifically when operating virtual ThingWorx IoT Edge aircraft in project [thingworx-flightgear-edge](https://github.com/jas0ndiamond/thingworx-flightgear-edge)
+
+## Outline
+![caltrops](https://user-images.githubusercontent.com/7103526/194747935-c3bf107c-7836-45c1-b3c9-76b77639d2d4.png)
 
 ## Components
 * Python3
@@ -96,7 +99,7 @@ Rules can be reset to the startup default by issuing a request to `http://caltro
 
 The default proxy ports can be changed by modifying the container's squid config file, and the caltrops.py python application. Ensure that the new port range is published when the container is run.
 
-### Testing
+## Testing
 
 Basic tests can be executed from the project root directory by running:
 ```bash
@@ -104,7 +107,7 @@ Basic tests can be executed from the project root directory by running:
 python3 -m unittest test/caltrops_test.py
 ```
 
-### TODO
+## TODO
 * Rate-limiting iptables rules.
 * Probability-based packet loss rules.
 * Optional persistence of rules.
