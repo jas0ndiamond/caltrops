@@ -3,15 +3,12 @@ import requests
 import json
 import re
 import time
+import sys
 
 #from the project root:
 #python3 -m unittest test/caltrops_test.py
 
-#TODO: figure this out automatically
 PROTOCOL = "http"
-CALTROPS_IP = "172.20.0.2" #definitely double check this
-CALTROPS_PORT = 5000
-CALTROPS_URL_BASE = "%s://%s:%d" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT)
 
 MANAGE_CONTAINER = False
 
@@ -336,7 +333,34 @@ class caltrops_tests(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    #TODO set target host and port
+    global CALTROPS_IP
+    global CALTROPS_PORT
+    global CALTROPS_URL_BASE
+    CALTROPS_IP = "192.168.137.1" #default bad guess
+    CALTROPS_PORT = 5000
+
+    #set target host and port
+    if(len(sys.argv) == 3):
+        #host and port
+        CALTROPS_IP = sys.argv[1]
+        CALTROPS_PORT = int( sys.argv[2] )
+    elif(len(sys.argv) == 2):
+        if(sys.argv[1] == "-h" or sys.argv[1] == "--help"):
+            print("Usage: caltrops_test.py [ip] [port]")
+            exit(1)
+        else:
+            #host
+            CALTROPS_IP = sys.argv[1]
+    else:
+        #default host and port
+        pass
+
+    #delete because this is passed on by default to the unit test framework
+    del sys.argv[1:]
+
+    print("Running tests using ip %s and port %d" % (CALTROPS_IP, CALTROPS_PORT) )
+    CALTROPS_URL_BASE = "%s://%s:%d" % (PROTOCOL, CALTROPS_IP, CALTROPS_PORT)
+
 
     #TODO: optionally ensure docker container is started up and running
 
