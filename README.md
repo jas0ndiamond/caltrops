@@ -111,3 +111,5 @@ python3 -m unittest test/caltrops_test.py
 * Rate-limiting iptables rules.
 * Probability-based packet loss rules.
 * Optional persistence of rules.
+* Multiple caltrops instances forwarding traffic internally
+* TTL and hop count rules

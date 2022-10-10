@@ -21,6 +21,9 @@ flask_www_dir = "%s/www" % root_dir
 
 app = Flask(__name__, static_url_path='/www', static_folder=flask_www_dir)
 
+HR_HTML = "<hr style=\"background-color:#666666;border-radius: 7px 7px 7px 7px;height: 6px;width:900px\">"
+
+
 HTTP_OK = 200
 HTTP_FAIL = 500
 
@@ -427,38 +430,52 @@ def home():
 
     #TODO: favicon
 
-    output = "<html><head></head><body>\n"
+    output = """<html>\n
+    <head>\n
+    <title>caltrops</title>\n
+    <link rel="icon" type="image/x-icon" href="/www/favicon.ico">
+    </head>\n
+
+    """
 
     #TODO: logo on page
-    #TODO: sort lists of rules
+    #TODO: sort lists of rules -> no we should not obscure the rule order
     #TODO: basic control interface
     #TODO: dynamic diagram
 
     #to test, add a rule with iptables-legacy: /usr/sbin/iptables-legacy -A INPUT -p tcp -m tcp --dport 24800 -j ACCEPT
     logger.debug("filter easy.dump_table: %s" % iptc.easy.dump_table(FILTER_TABLE_NAME))
 
-    output = "%s\n<br>\nInput Chain\n" % output
+    output = "%s\n<h2>Caltrops</h2>\n" % (output)
+
+    output = "%s\n<hr style=\"background-color:#666666;border-radius: 7px 7px 7px 7px;height: 6px;width:1200px;margin-left:0\">\n" % (output)
+
+    output = "%s\n<table width=\"1200\"><tr><td align=\"left\" style=\"background-color:#d9d9d9;\ width=\"900\">\n" % output
+
+    output = "%s\n<h3>Input Chain</h3>\n" % output
 
     for rule in iptc.easy.dump_chain(FILTER_TABLE_NAME, INPUT_CHAIN_NAME):
-        output = "%s<br>%s\n" % (output, rule)
+        output = "%s\n%s\n<br>\n" % (output, rule)
 
-    output = "%s<hr>\n" % output
+    output = "%s\n%s\n" % (output, HR_HTML)
 
-    output = "%s\n<br>\nOutput Chain\n" % output
+    output = "%s\n<h3>Output Chain</h3>\n" % output
 
     for rule in iptc.easy.dump_chain(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME):
-        output = "%s<br>%s\n" % (output, rule)
+        output = "%s\n%s\n<br>\n" % (output, rule)
 
-    output = "%s<hr>\n" % output
+    output = "%s\n%s\n" % (output, HR_HTML)
 
-    output = "%s\n<br>\nForward Chain" % output
+    output = "%s\n<h3>Forward Chain</h3>" % output
 
     for rule in (iptc.easy.dump_chain(FILTER_TABLE_NAME, FORWARD_CHAIN_NAME)):
-        output = "%s<br>%s\n" % (output, rule)
+        output = "%s\n%s\n<br>\n" % (output, rule)
 
-    output = "\n%s<hr>\n" % output
+    output = "%s\n%s\n" % (output, HR_HTML)
 
-    return ("\n%s</body></html>" % output)
+    output = "%s</td>\n<td style=\"background-color:#ffffff;\ align=\"left\" valign=\"top\"><img src=\"/www/caltrops_logo.png\"></td>\n</tr>\n</table>\n" % output
+
+    return ("%s</body></html>" % output)
 
 ##############################
 #flask seems to require this here, after the endpoints are defined above
@@ -646,7 +663,8 @@ def setDefaultRules():
 
     logger.info("Inserting default rules")
 
-    for i in range(ALLOWED_PROXY_PORT_MIN, ALLOWED_PROXY_PORT_MAX):
+    #range is not inclusive of the max so add one
+    for i in range(ALLOWED_PROXY_PORT_MIN, ALLOWED_PROXY_PORT_MAX + 1):
 
         #need the string form
         port = str( i )

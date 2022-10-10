@@ -100,7 +100,8 @@ COPY caltrops.py /opt/caltrops/caltrops.py
 #create caltrops web dir for ui resources
 RUN mkdir /opt/caltrops/www
 
-#TODO: copy ui resources to the caltrops www dir
+#copy ui resources to flask www directory
+COPY res/www/ /opt/caltrops/www
 
 ################
 #run the caltrops app as the container entrypoint
