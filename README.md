@@ -42,6 +42,8 @@ docker pull jas0ndiamond/caltrops
 docker run --name jas0ndiamond/caltrops --privileged=true -p 5000:5000 -p 3128-3148:3128-3148
 ```
 
+Caltrops must be run in privileged mode. This is required by iptables.
+
 The Caltrops UI is available at http://caltrops_host:5000, which will display a simple readout of the iptables rules in place.
 
 Connect your device to the proxy port. The default target for the proxy ports is ACCEPT, so a connection attempt should succeed. The proxy is configured by default with Basic auth in the Dockerfile, with user `myproxyuser`, and password `myproxypass`
