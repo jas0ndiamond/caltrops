@@ -5,8 +5,8 @@ import re
 import time
 import sys
 
-#from the project root:
-#python3 -m unittest test/caltrops_test.py
+#from the project test dir:
+#python3 ./caltrops_test.py
 
 PROTOCOL = "http"
 
