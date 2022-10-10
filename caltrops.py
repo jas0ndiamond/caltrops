@@ -663,7 +663,8 @@ def setDefaultRules():
 
     logger.info("Inserting default rules")
 
-    for i in range(ALLOWED_PROXY_PORT_MIN, ALLOWED_PROXY_PORT_MAX):
+    #range is not inclusive of the max so add one
+    for i in range(ALLOWED_PROXY_PORT_MIN, ALLOWED_PROXY_PORT_MAX + 1):
 
         #need the string form
         port = str( i )
