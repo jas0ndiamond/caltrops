@@ -87,7 +87,7 @@ curl -i "http://caltrops_host:5000/reject_outbound?port=3131"
 ```
 
 An HTTP 200 will be returned on success, with field `change` set accordingly:
-* `SUCCESS` - the rule changed was successfully applied
+* `SUCCESS` - the rule change was successfully applied
 * `SKIP` - the rule was successfully determined to not need changing (i.e. attempting to apply an ACCEPT target to a rule already with an ACCEPT target)
 * `FAIL` - the rule change failed, likely due to an invalid/malformed port, or a port not served by the underlying squid instance.
 
