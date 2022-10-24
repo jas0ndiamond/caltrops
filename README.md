@@ -42,6 +42,8 @@ docker pull jas0ndiamond/caltrops
 docker run --name jas0ndiamond/caltrops --privileged=true -p 5000:5000 -p 3128-3148:3128-3148
 ```
 
+Caltrops must be run in privileged mode. This is required by iptables.
+
 The Caltrops UI is available at http://caltrops_host:5000, which will display a simple readout of the iptables rules in place.
 
 Connect your device to the proxy port. The default target for the proxy ports is ACCEPT, so a connection attempt should succeed. The proxy is configured by default with Basic auth in the Dockerfile, with user `myproxyuser`, and password `myproxypass`
@@ -85,7 +87,7 @@ curl -i "http://caltrops_host:5000/reject_outbound?port=3131"
 ```
 
 An HTTP 200 will be returned on success, with field `change` set accordingly:
-* `SUCCESS` - the rule changed was successfully applied
+* `SUCCESS` - the rule change was successfully applied
 * `SKIP` - the rule was successfully determined to not need changing (i.e. attempting to apply an ACCEPT target to a rule already with an ACCEPT target)
 * `FAIL` - the rule change failed, likely due to an invalid/malformed port, or a port not served by the underlying squid instance.
 
