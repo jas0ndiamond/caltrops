@@ -2,3 +2,4 @@ caltrops.txt
 __pycache__
 test/__pycache__/
 caltrops.pyc
+*.odg
