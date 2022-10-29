@@ -6,6 +6,6 @@ services:
     privileged: true
     image: jas0ndiamond/caltrops:latest
     ports:
-      - "3128-3148:3128-3148"
-      - "5000:5000"
+      - "13128-13148:13128-13148"
+      - "15000:15000"
     restart: "no"

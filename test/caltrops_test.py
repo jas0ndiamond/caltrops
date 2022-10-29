@@ -12,8 +12,8 @@ PROTOCOL = "http"
 
 MANAGE_CONTAINER = False
 
-PORT_MIN = 3128
-PORT_MAX = 3148
+PORT_MIN = 13128
+PORT_MAX = 13148
 
 HTTP_OK = 200
 HTTP_FAIL = 500
@@ -43,103 +43,105 @@ class caltrops_tests(unittest.TestCase):
         #test host and port are up and we get the expected iptables rules
         rules = self.get_rules_sorted(FILTER_TABLE_NAME, INPUT_CHAIN_NAME)
 
-        #squid ports + caltrops port
-        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 1)
+        #squid ports inclusive + caltrops port
+        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 2)
 
         i = 0
-        for port in range(PORT_MIN, PORT_MAX):
+        #range inclusive
+        for port in range(PORT_MIN, PORT_MAX + 1):
             regex = ".*%d.*%s.*" % (port, JUDGEMENT_ACCEPT)
             self.assertNotEqual( re.match(regex, rules[i]), None, "Accept judgement on input port %d" % port  )
             i+=1
 
         #caltrops port last
         regex = ".*%d.*%s.*" % (CALTROPS_PORT, JUDGEMENT_ACCEPT)
-        self.assertNotEqual( re.match(regex, rules[i] ), None )
+        self.assertNotEqual( re.match(regex, rules[i] ), None, "Accept judgement on caltrops port" )
 
     def test_default_output_setup(self):
         #test host and port are up and we get the expected iptables rules
         rules = self.get_rules_sorted(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
 
-        #squid ports + caltrops port
-        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 1)
+        #squid ports inclusive + caltrops port
+        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 2)
 
         i = 0
-        for port in range(PORT_MIN, PORT_MAX):
+        #range inclusive
+        for port in range(PORT_MIN, PORT_MAX + 1):
             regex = ".*%d.*%s.*" % (port, JUDGEMENT_ACCEPT)
             self.assertNotEqual( re.match(regex, rules[i]), None, "Accept judgement on output port %d" % port  )
             i+=1
 
         #caltrops port last
         regex = ".*%d.*%s.*" % (CALTROPS_PORT, JUDGEMENT_ACCEPT)
-        self.assertNotEqual( re.match(regex, rules[i] ), None )
+        self.assertNotEqual( re.match(regex, rules[i] ), None, "Accept judgement on caltrops port" )
 
     def test_rule_reset(self):
 
         #toggle judgements on a bunch of ports
 
         #inbound
-        payload = {'port': 3128}
+        payload = {'port': 13128}
         response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3130}
+        payload = {'port': 13130}
         response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3132}
+        payload = {'port': 13132}
         response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3134}
+        payload = {'port': 13134}
         response = requests.get("%s/reject_inbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3129}
+        payload = {'port': 13129}
         response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3131}
+        payload = {'port': 13131}
         response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3133}
+        payload = {'port': 13133}
         response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3135}
+        payload = {'port': 13135}
         response = requests.get("%s/drop_inbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
         #outbound
-        payload = {'port': 3138}
+        payload = {'port': 13138}
         response = requests.get("%s/reject_outbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3140}
+        payload = {'port': 13140}
         response = requests.get("%s/reject_outbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3142}
+        payload = {'port': 13142}
         response = requests.get("%s/reject_outbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3144}
+        payload = {'port': 13144}
         response = requests.get("%s/reject_outbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3139}
+        payload = {'port': 13139}
         response = requests.get("%s/drop_outbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3141}
+        payload = {'port': 13141}
         response = requests.get("%s/drop_outbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3143}
+        payload = {'port': 13143}
         response = requests.get("%s/drop_outbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
-        payload = {'port': 3145}
+        payload = {'port': 13145}
         response = requests.get("%s/drop_outbound" % (CALTROPS_URL_BASE), params=payload)
         self.assertEqual(HTTP_OK, response.status_code)
 
@@ -153,41 +155,43 @@ class caltrops_tests(unittest.TestCase):
         #test host and port are up and we get the expected iptables rules
         rules = self.get_rules_sorted(FILTER_TABLE_NAME, INPUT_CHAIN_NAME)
 
-        #squid ports + caltrops port
-        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 1)
+        #squid ports inclusive + caltrops port
+        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 2)
 
         i = 0
-        for port in range(PORT_MIN, PORT_MAX):
+        #range inclusive
+        for port in range(PORT_MIN, PORT_MAX + 1):
             regex = ".*%d.*%s.*" % (port, JUDGEMENT_ACCEPT)
             self.assertNotEqual( re.match(regex, rules[i]), None, "Accept judgement on input port %d" % port  )
             i+=1
 
         #caltrops port last
         regex = ".*%d.*%s.*" % (CALTROPS_PORT, JUDGEMENT_ACCEPT)
-        self.assertNotEqual( re.match(regex, rules[i] ), None )
+        self.assertNotEqual( re.match(regex, rules[i] ), None, "Accept judgement on caltrops port" )
 
         #confirm all accept outbound
         #test host and port are up and we get the expected iptables rules
         rules = self.get_rules_sorted(FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
 
-        #squid ports + caltrops port
-        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 1)
+        #squid ports inclusive + caltrops port
+        self.assertEqual(len(rules), PORT_MAX - PORT_MIN + 2)
 
         i = 0
-        for port in range(PORT_MIN, PORT_MAX):
+        #range inclusive
+        for port in range(PORT_MIN, PORT_MAX + 1):
             regex = ".*%d.*%s.*" % (port, JUDGEMENT_ACCEPT)
             self.assertNotEqual( re.match(regex, rules[i]), None, "Accept judgement on output port %d" % port  )
             i+=1
 
         #caltrops port last
         regex = ".*%d.*%s.*" % (CALTROPS_PORT, JUDGEMENT_ACCEPT)
-        self.assertNotEqual( re.match(regex, rules[i] ), None )
+        self.assertNotEqual( re.match(regex, rules[i] ), None, "Accept judgement on caltrops port" )
 
     def test_input_toggle_judgement(self):
 
         #reset rules
 
-        target_port = 3132
+        target_port = 13132
 
         #expect this port to be valid
         #expect there's an accept rule for this in INPUT
@@ -198,7 +202,7 @@ class caltrops_tests(unittest.TestCase):
 
         starting_rules = self.get_rules_sorted(FILTER_TABLE_NAME, INPUT_CHAIN_NAME)
 
-        self.assertEqual( len(starting_rules), 21)
+        self.assertEqual( len(starting_rules), PORT_MAX - PORT_MIN + 2)
         self.assertEqual( len(port_rules), 1)
 
         regex = ".*%s.*" % JUDGEMENT_ACCEPT
@@ -337,7 +341,7 @@ if __name__ == '__main__':
     global CALTROPS_PORT
     global CALTROPS_URL_BASE
     CALTROPS_IP = "192.168.137.1" #default bad guess
-    CALTROPS_PORT = 5000
+    CALTROPS_PORT = 15000
 
     #set target host and port
     if(len(sys.argv) == 3):

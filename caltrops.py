@@ -28,11 +28,11 @@ HTTP_OK = 200
 HTTP_FAIL = 500
 
 #ensure this port range does contain the flask port
-ALLOWED_PROXY_PORT_MIN = 3128
-ALLOWED_PROXY_PORT_MAX = 3148
+ALLOWED_PROXY_PORT_MIN = 13128
+ALLOWED_PROXY_PORT_MAX = 13148
 
 #ensure this port does not conflict with the proxy port range
-FLASK_PORT = 5000
+FLASK_PORT = 15000
 FLASK_PORT_STR = "%s" % FLASK_PORT
 
 #TODO: dynamic or else this will impact multiple edge devices
@@ -71,7 +71,7 @@ def root():
 @app.route('/drop_inbound', methods=['GET'])
 def drop_inbound():
 
-    #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 3128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
+    #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 13128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
 
     port_arg = request.args.get(PORT_PARAM_NAME)[:5]
 
@@ -110,7 +110,7 @@ def drop_inbound():
 
         current_rule = getRuleAffectingPort(drop_port)
 
-    #drop tcp to caltrops on port the squid port 3128, which routes traffic to the platform
+    #drop tcp to caltrops on port the squid port, which routes traffic to the platform
 
     iptablesInsertRuleInbound(drop_port, JUDGEMENT_DROP)
 
@@ -141,7 +141,7 @@ def reject_inbound():
 
     logger.debug("Attempting to add REJECT rule for inbound traffic on port %s" % reject_port )
 
-    #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 3128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
+    #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 13128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
 
     if( isInboundRejectRuleActive(reject_port) == True ):
         logger.warning("Skipping adding REJECT rule for platform inbound port. Already REJECTing")
@@ -161,7 +161,7 @@ def reject_inbound():
 
         current_rule = getRuleAffectingPort(reject_port)
 
-    #drop tcp to caltrops on port the squid port 3128, which routes traffic to the platform
+    #drop tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
     iptablesInsertRuleInbound(reject_port, JUDGEMENT_REJECT)
 
@@ -173,7 +173,7 @@ def reject_inbound():
 
 @app.route('/accept_inbound', methods=['GET'])
 def accept_inbound():
-    #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 3128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
+    #>>> rule = {"dst": "172.16.1.1", "protocol": "tcp", "tcp": {"dport": 13128}, "target": {"DNAT": {"to-destination": "100.127.20.21:8080" }}}
 
     #inbound dest port?
 
@@ -201,7 +201,7 @@ def accept_inbound():
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the platform
+    #allow tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(accept_port)
@@ -251,7 +251,7 @@ def accept_outbound():
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the platform
+    #allow tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(accept_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -299,7 +299,7 @@ def drop_outbound():
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the platform
+    #allow tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(drop_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -347,7 +347,7 @@ def reject_outbound():
         #still a successful handling of a request
         return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
 
-    #allow tcp to caltrops on port the squid port 3128, which routes traffic to the platform
+    #allow tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
     #delete any existing rules for this port
     current_rule = getRuleAffectingPort(reject_port, FILTER_TABLE_NAME, OUTPUT_CHAIN_NAME)
@@ -428,8 +428,6 @@ def home():
 
     logger.info("Displaying iptables info")
 
-    #TODO: favicon
-
     output = """<html>\n
     <head>\n
     <title>caltrops</title>\n
@@ -438,7 +436,6 @@ def home():
 
     """
 
-    #TODO: logo on page
     #TODO: sort lists of rules -> no we should not obscure the rule order
     #TODO: basic control interface
     #TODO: dynamic diagram

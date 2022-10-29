@@ -2,7 +2,7 @@ FROM debian:buster-20220316
 MAINTAINER jason.a.diamond@gmail.com
 
 #run this in a privileged container - iptables is a privileged feature
-#docker run --name caltrops --privileged=true -p 5000:5000 -p 3128-3148:3128-3148 jas0ndiamond/caltrops
+#docker run --name caltrops --privileged=true -p 15000:15000 -p 13128-13148:13128-13148 jas0ndiamond/caltrops
 
 RUN mkdir /opt/caltrops
 
@@ -83,10 +83,10 @@ RUN /usr/sbin/squid -k parse
 #ports
 
 #flask hw port
-EXPOSE 5000
+EXPOSE 15000
 
 #proxy ports for edge devices. synchronize with the allowed ports in the squid config
-EXPOSE 3128-3148
+EXPOSE 13128-13148
 
 ################
 #deploy our flask app
