@@ -51,6 +51,12 @@ FORWARD_CHAIN_NAME = "FORWARD"
 
 PORT_PARAM_NAME = "port"
 
+CHANGE_RESP_FIELD = "change"
+CHANGE_FAIL_VAL = "FAIL"
+CHANGE_SUCCESS_VAL = "SUCCESS"
+CHANGE_SKIP_VAL = "SKIP"
+
+
 DUMMY_STR = "python should make this easier"
 STR_CLASS = DUMMY_STR.__class__
 DICT_CLASS = {DUMMY_STR : DUMMY_STR}.__class__
@@ -83,7 +89,7 @@ def drop_inbound():
             drop_port = port_arg
         else:
             logger.error("Drop port traffic failed- invalid port")
-            return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+            return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
     else:
         #default if no arg is passed
         drop_port = SQUID_PORT_DEFAULT_STR
@@ -96,7 +102,7 @@ def drop_inbound():
         logger.warning("Skipping adding DROP rule for platform inbound port. Already DROPping")
 
         #still a successful handling of a request
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SKIP_VAL)
 
     #delete any existing rules for this port
 
@@ -116,9 +122,9 @@ def drop_inbound():
 
     #check our rule change, and report in response
     if(isInboundDropRuleActive(drop_port)):
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SUCCESS_VAL)
     else:
-        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+        return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
 
 
 @app.route('/reject_inbound', methods=['GET'])
@@ -134,7 +140,7 @@ def reject_inbound():
             reject_port = port_arg
         else:
             logger.error("Reject port traffic failed- invalid port")
-            return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+            return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
     else:
         #default if no arg is passed
         reject_port = SQUID_PORT_DEFAULT_STR
@@ -147,7 +153,7 @@ def reject_inbound():
         logger.warning("Skipping adding REJECT rule for platform inbound port. Already REJECTing")
 
         #still a successful handling of a request
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SKIP_VAL)
 
     #delete any existing rules for this port
 
@@ -167,9 +173,9 @@ def reject_inbound():
 
     #check our rule change, and report in response
     if(isInboundRejectRuleActive(reject_port)):
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SUCCESS_VAL)
     else:
-        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+        return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
 
 @app.route('/accept_inbound', methods=['GET'])
 def accept_inbound():
@@ -187,7 +193,7 @@ def accept_inbound():
             accept_port = port_arg
         else:
             logger.error("Drop port traffic failed- invalid port")
-            return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+            return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
     else:
         #default if no arg is passed
         accept_port = SQUID_PORT_DEFAULT_STR
@@ -199,7 +205,7 @@ def accept_inbound():
         logger.warning("Skipping adding accept rule for platform inbound port. Already ACCEPTing")
 
         #still a successful handling of a request
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SKIP_VAL)
 
     #allow tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
@@ -218,9 +224,9 @@ def accept_inbound():
 
     #check our rule change, and report in response
     if(isInboundAcceptRuleActive(accept_port)):
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SUCCESS_VAL)
     else:
-        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+        return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
 
 ##################
 #platform -> edge, outbound from platform traffic
@@ -237,7 +243,7 @@ def accept_outbound():
             accept_port = port_arg
         else:
             logger.error("Drop port traffic failed- invalid port")
-            return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+            return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
     else:
         #default if no arg is passed
         accept_port = SQUID_PORT_DEFAULT_STR
@@ -249,7 +255,7 @@ def accept_outbound():
         logger.warning("Skipping adding accept rule for platform outbound port. Already ACCEPTing")
 
         #still a successful handling of a request
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SKIP_VAL)
 
     #allow tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
@@ -268,9 +274,9 @@ def accept_outbound():
 
     #check our rule change, and report in response
     if(isOutboundAcceptRuleActive(accept_port)):
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SUCCESS_VAL)
     else:
-        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+        return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
 
 @app.route('/drop_outbound', methods=['GET'])
 def drop_outbound():
@@ -285,7 +291,7 @@ def drop_outbound():
             drop_port = port_arg
         else:
             logger.error("Drop port traffic failed- invalid port")
-            return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+            return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
     else:
         #default if no arg is passed
         drop_port = SQUID_PORT_DEFAULT_STR
@@ -297,7 +303,7 @@ def drop_outbound():
         logger.warning("Skipping adding DROP rule for platform outbound port. Already DROPping")
 
         #still a successful handling of a request
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SKIP_VAL)
 
     #allow tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
@@ -317,9 +323,9 @@ def drop_outbound():
 
     #check our rule change, and report in response
     if(isOutboundDropRuleActive(drop_port)):
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SUCCESS_VAL)
     else:
-        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+        return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
 
 @app.route('/reject_outbound', methods=['GET'])
 def reject_outbound():
@@ -333,7 +339,7 @@ def reject_outbound():
             reject_port = port_arg
         else:
             logger.error("Drop port traffic failed- invalid port")
-            return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+            return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
     else:
         #default if no arg is passed
         reject_port = SQUID_PORT_DEFAULT_STR
@@ -345,7 +351,7 @@ def reject_outbound():
         logger.warning("Skipping adding reject rule for platform outbound port. Already REJECTing")
 
         #still a successful handling of a request
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SKIP' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SKIP_VAL)
 
     #allow tcp to caltrops on port the squid port 13128, which routes traffic to the platform
 
@@ -364,9 +370,9 @@ def reject_outbound():
 
     #check our rule change, and report in response
     if(isOutboundRejectRuleActive(reject_port)):
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SUCCESS_VAL)
     else:
-        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+        return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
 
 @app.route("/get_rules", methods=['GET'])
 def get_rules():
@@ -419,9 +425,9 @@ def reset_rules():
     flushRules()
 
     if(setDefaultRules() == True):
-        return build_rule_change_response(HTTP_OK, "{ 'change': 'SUCCESS' }")
+        return build_rule_change_response_from_str(HTTP_OK, CHANGE_SUCCESS_VAL)
     else:
-        return build_rule_change_response(HTTP_FAIL, "{ 'change': 'FAIL' }")
+        return build_rule_change_response_from_str(HTTP_FAIL, CHANGE_FAIL_VAL)
 
 @app.route('/info', methods=['GET'])
 def home():
@@ -524,6 +530,13 @@ def isValidPort(port_str):
     return (
         (port_num >= ALLOWED_PROXY_PORT_MIN and port_num <= ALLOWED_PROXY_PORT_MAX) and
         port_num != FLASK_PORT)
+
+def build_rule_change_response_from_str(status_code, result):
+
+    json_result = {}
+    json_result[CHANGE_RESP_FIELD] = result
+
+    return build_rule_change_response(status_code, json_result)
 
 def build_rule_change_response(status_code, data={}):
     return app.response_class(
