@@ -106,7 +106,7 @@ The default proxy ports can be changed by modifying the container's squid config
 Basic tests can be executed from the project root directory by running:
 ```bash
 #ensure your caltrops container is running first!
-python3 -m unittest test/caltrops_test.py
+python3 test/caltrops_test.py
 ```
 
 ## TODO
